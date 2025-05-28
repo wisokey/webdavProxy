@@ -13,7 +13,8 @@ def main():
         auth_username=config.AUTH_USERNAME,
         auth_password=config.AUTH_PASSWORD,
         host=config.HOST,
-        port=config.PORT
+        port=config.PORT,
+        mount_path=config.MOUNT_PATH
     )
 
     # 启动服务器

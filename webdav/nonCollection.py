@@ -27,7 +27,11 @@ class WebDAVProxyNonCollection(DAVNonCollection):
         """获取文件类型"""
         if self.meta is None:
             self.meta = self.provider.get_resource_meta(self.path)
-        return self.meta.get("content_type")
+        content_type = self.meta.get("content_type")
+        if content_type is None:
+            # 如果后端返回的content_type为空，设置为application/octet-stream
+            content_type = "application/octet-stream"
+        return content_type
 
     def get_creation_date(self):
         """获取文件创建时间"""
