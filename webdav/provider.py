@@ -89,6 +89,17 @@ class WebDAVProxy(DAVProvider):
                 key = key.replace(self.backend_path, '', 1)
             self.resource_meta_cache[key] = value
 
+    def clear_resource_meta(self, path):
+        """清理资源元数据缓存"""
+        if not path.endswith('/'):
+            self.resource_meta_cache.pop(path)
+            return
+        keys = self.resource_meta_cache.keys()
+        for key in keys:
+            if key.startswith(path):
+                self.resource_meta_cache.pop(key)
+        return
+
     def is_readonly(self):
         return super().is_readonly()
 

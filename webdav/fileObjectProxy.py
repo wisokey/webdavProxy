@@ -11,7 +11,7 @@ import io
 import requests
 import queue
 import threading
-from typing import Optional, Tuple, Dict, Any, Union
+from typing import Optional, Tuple, Dict, Any
 
 from .logger import logger
 
@@ -194,7 +194,7 @@ class FileObjectUploadProxy(io.RawIOBase):
         self.error_message = None
 
         # 初始化线程和队列
-        self._queue = queue.Queue()
+        self._queue = queue.Queue(maxsize=5)
         self._upload_thread = threading.Thread(target=self._upload_worker)
         self._upload_started = False
 
@@ -224,6 +224,7 @@ class FileObjectUploadProxy(io.RawIOBase):
                 chunk = self._queue.get()
                 if chunk is None:  # None作为结束标志
                     break
+                logger.debug(f"从队列获取数据块: {self.path}, 大小: {len(chunk)}字节")
                 self.uploaded_bytes += len(chunk)
                 yield chunk
                 self._queue.task_done()
@@ -270,7 +271,7 @@ class FileObjectUploadProxy(io.RawIOBase):
             raise IOError(f"上传错误: {self.error_message}")
 
         data_size = len(data)
-        self._queue.put(data)
+        self._queue.put(data, block=True)
         logger.debug(f"写入数据块到上传队列: {self.path}, 大小: {data_size}字节")
         return data_size
 
@@ -289,7 +290,6 @@ class FileObjectUploadProxy(io.RawIOBase):
             finally:
                 super(FileObjectUploadProxy, self).close()
                 logger.debug(f"关闭文件上传代理: {self.path}, 已上传数据: {self.uploaded_bytes}字节")
-
 
     def get_status(self) -> Dict[str, Any]:
         """获取上传状态"""

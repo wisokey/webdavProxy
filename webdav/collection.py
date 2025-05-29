@@ -2,13 +2,13 @@
 WebDAV代理集合（目录）类
 """
 
-import os
 import requests
 from typing import Optional
-from wsgidav.dav_provider import DAVCollection, _DAVResource
+from wsgidav.dav_provider import DAVCollection
 from wsgidav.util import join_uri
 from wsgidav.dav_error import DAVError, HTTP_NOT_FOUND
 
+from .nonCollection import WebDAVProxyNonCollection
 from .logger import logger
 from .utils import Utils
 
@@ -20,26 +20,12 @@ class WebDAVProxyCollection(DAVCollection):
         self.backend_url = self.provider._get_backend_url(path)
         self.auth = self.provider.auth
         self.meta = None
+        self.is_moved = False
 
-    def create_empty_resource(self, name: str) -> _DAVResource:
+    def create_empty_resource(self, name: str):
         """创建空资源（文件）"""
         path = join_uri(self.path, name)
-        backend_url = self.provider._get_backend_url(path)
-
-        logger.info(f"创建空文件: {path}")
-        response = requests.request(
-            method="PUT",
-            url=backend_url,
-            auth=self.auth,
-            data=b""
-        )
-
-        if response.status_code not in (201, 204):
-            logger.error(f"创建空文件 {path} 失败，状态码: {response.status_code}")
-            raise DAVError(response.status_code)
-
-        logger.info(f"空文件 {path} 创建成功")
-        return True
+        return WebDAVProxyNonCollection(path, self.environ)
 
     def create_collection(self, name):
         """创建集合（目录）"""
@@ -58,11 +44,14 @@ class WebDAVProxyCollection(DAVCollection):
             raise DAVError(response.status_code)
 
         logger.info(f"目录 {path} 创建成功")
-        return True
 
     def get_member_names(self):
         """获取集合成员名称列表"""
         logger.info(f"获取目录 {self.path} 成员名称列表")
+
+        # 如果是COPY操作，则直接返回空列表，避免循环调用后端造成响应超时
+        if self.environ.get("REQUEST_METHOD", "").upper() == "COPY":
+            return []
 
         result = Utils.propfind(self.backend_url, self.auth)
         self.provider.set_resource_meta(result)
@@ -86,6 +75,8 @@ class WebDAVProxyCollection(DAVCollection):
 
     def delete(self):
         """删除集合（目录）"""
+        if self.is_moved:
+            return
         logger.info(f"删除目录: {self.path}")
 
         response = requests.request(
@@ -94,12 +85,16 @@ class WebDAVProxyCollection(DAVCollection):
             auth=self.auth
         )
 
+        err_list = []
         if response.status_code not in (200, 204):
             logger.error(f"删除目录 {self.path} 失败，状态码: {response.status_code}")
-            raise DAVError(response.status_code)
+            err_list.append((self.path, response.status_code))
+            return err_list
 
         logger.info(f"目录 {self.path} 删除成功")
-        return True
+        # 清理缓存的元数据，确保下次获取最新数据
+        self.provider.clear_resource_meta(self.path)
+        return err_list
 
     def copy_move_single(self, dest_path, *, is_move):
         """复制或移动集合（目录）"""
@@ -112,15 +107,15 @@ class WebDAVProxyCollection(DAVCollection):
             method,
             url=self.backend_url,
             auth=self.auth,
-            headers={"Destination": dest_url, "Overwrite": "T"}
+            headers={"Destination": dest_url, "Overwrite": self.environ.get("HTTP_OVERWRITE")}
         )
 
         if response.status_code not in (201, 204):
             logger.error(f"{action}目录 {self.path} 到 {dest_path} 失败，状态码: {response.status_code}")
             raise DAVError(response.status_code)
 
+        self.is_moved = is_move
         logger.info(f"目录 {self.path} {action}到 {dest_path} 成功")
-        return True
 
     def support_recursive_delete(self):
         # 支持递归删除
@@ -138,15 +133,18 @@ class WebDAVProxyCollection(DAVCollection):
             method="MOVE",
             url=self.backend_url,
             auth=self.auth,
-            headers={"Destination": dest_url, "Overwrite": "T"}
+            headers={"Destination": dest_url, "Overwrite": self.environ.get("HTTP_OVERWRITE")}
         )
 
+        err_list = []
         if response.status_code not in (201, 204):
             logger.error(f"递归移动目录 {self.path} 到 {dest_path} 失败，状态码: {response.status_code}")
-            raise DAVError(response.status_code)
+            err_list.append((self.path, response.status_code))
+            return err_list
 
         logger.info(f"目录 {self.path} 递归移动到 {dest_path} 成功")
-        return True
+        self.is_moved = True
+        return err_list
 
     def get_creation_date(self):
         if self.meta is None:

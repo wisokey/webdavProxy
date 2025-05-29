@@ -2,6 +2,7 @@
 WebDAV代理文件类
 """
 
+import requests
 from wsgidav.dav_provider import DAVNonCollection
 
 from .logger import logger
@@ -15,6 +16,7 @@ class WebDAVProxyNonCollection(DAVNonCollection):
         self.backend_url = self.provider._get_backend_url(path)
         self.auth = self.provider.auth
         self.meta = None
+        self.is_moved = False
         self.upload_proxy = None
 
     def get_content_length(self):
@@ -108,6 +110,49 @@ class WebDAVProxyNonCollection(DAVNonCollection):
         
         # 清空缓存的元数据，确保下次获取最新数据
         self.meta = None
+        self.provider.clear_resource_meta(self.path)
+
+    def delete(self):
+        """删除文件"""
+        if self.is_moved:
+            return
+        logger.info(f"删除文件: {self.path}")
+        response = requests.request(
+            method="DELETE",
+            url=self.backend_url,
+            auth=self.auth
+        )
+        err_list = []
+        if response.status_code not in (200, 204):
+            logger.error(f"删除文件 {self.path} 失败，状态码: {response.status_code}")
+            err_list.append((self.path, response.status_code))
+            return err_list
+
+        logger.info(f"文件 {self.path} 删除成功")
+        # 清理缓存的元数据，确保下次获取最新数据
+        self.provider.clear_resource_meta(self.path)
+        return err_list
+
+    def copy_move_single(self, dest_path, *, is_move):
+        """复制或移动文件"""
+        dest_url = self.provider._get_backend_url(dest_path)
+        method = "MOVE" if is_move else "COPY"
+        action = "移动" if is_move else "复制"
+
+        logger.info(f"{action}文件: {self.path} 到 {dest_path}")
+        response = requests.request(
+            method,
+            url=self.backend_url,
+            auth=self.auth,
+            headers={"Destination": dest_url, "Overwrite": self.environ.get("HTTP_OVERWRITE")}
+        )
+
+        if response.status_code not in (201, 204):
+            logger.error(f"{action}文件 {self.path} 到 {dest_path} 失败，状态码: {response.status_code}")
+            raise DAVError(response.status_code)
+
+        self.is_moved = is_move
+        logger.info(f"文件 {self.path} {action}到 {dest_path} 成功")
 
     def resolve(self, script_name, path_info):
         return super().resolve(script_name, path_info)
