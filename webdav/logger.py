@@ -3,12 +3,12 @@
 """
 
 import logging
-import os
+import config
 
 # 日志配置
-ENABLE_FILE_LOGGING = os.getenv('ENABLE_FILE_LOGGING', 'false').lower() == 'true'
-LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
-LOG_FILE = os.getenv('LOG_FILE', 'webdav_proxy.log')
+ENABLE_FILE_LOGGING = config.ENABLE_FILE_LOGGING
+LOG_LEVEL = config.LOG_LEVEL
+LOG_FILE = config.LOG_FILE
 
 # 配置日志记录器
 logger = logging.getLogger('webdav_proxy')

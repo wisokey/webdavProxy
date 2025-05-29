@@ -56,14 +56,14 @@ class WebDAVProxyNonCollection(DAVNonCollection):
     def get_content(self):
         """获取文件内容 - 使用流式下载代理"""
         logger.info(f"获取文件内容: {self.path}")
-        
+
         # 创建下载代理并返回，实现流式下载
         download_proxy = FileObjectProxy.create_download_proxy(
             self.path, 
             self.backend_url, 
             self.auth
         )
-        
+
         return download_proxy
 
     def get_etag(self):
@@ -83,7 +83,7 @@ class WebDAVProxyNonCollection(DAVNonCollection):
     def begin_write(self, *, content_type=None):
         """开始写入 - 创建并返回上传代理"""
         logger.info(f"开始上传文件: {self.path}")
-        
+
         # 创建上传代理，实现流式上传
         self.upload_proxy = FileObjectProxy.create_upload_proxy(
             self.path, 
@@ -91,7 +91,7 @@ class WebDAVProxyNonCollection(DAVNonCollection):
             self.auth, 
             content_type
         )
-        
+
         return self.upload_proxy
 
     def end_write(self, *, with_errors):
@@ -99,7 +99,7 @@ class WebDAVProxyNonCollection(DAVNonCollection):
         if with_errors:
             logger.error(f"文件上传出错: {self.path}")
             return
-        
+
         # 获取上传状态
         if hasattr(self, 'upload_proxy') and self.upload_proxy:
             status = self.upload_proxy.get_status()
@@ -107,7 +107,7 @@ class WebDAVProxyNonCollection(DAVNonCollection):
                 logger.error(f"上传文件 {self.path} 失败: {status.get('error')}")
             else:
                 logger.info(f"文件上传成功: {self.path}, 大小: {status.get('uploaded_bytes', 0)}字节")
-        
+
         # 清空缓存的元数据，确保下次获取最新数据
         self.meta = None
         self.provider.clear_resource_meta(self.path)

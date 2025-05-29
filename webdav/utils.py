@@ -8,12 +8,11 @@ import urllib.parse
 from datetime import datetime
 from lxml import etree
 
-
 from .logger import logger
 
 class Utils:
     """ 工具类 """
-    
+
     # 调用 PROPFIND 方法 获取后端资源列表
     @staticmethod
     def propfind(path, auth):

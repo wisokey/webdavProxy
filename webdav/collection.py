@@ -14,7 +14,7 @@ from .utils import Utils
 
 class WebDAVProxyCollection(DAVCollection):
     """WebDAV 代理集合（目录）"""
-    
+
     def __init__(self, path: str, environ: dict):
         super().__init__(path, environ)
         self.backend_url = self.provider._get_backend_url(path)

@@ -1,8 +1,6 @@
 from webdav.server import WebDAVServer
 import config
 
-
-
 def main():
     """主函数"""
     # 创建WebDAV服务器实例

@@ -1,11 +1,13 @@
 """
 WebDAV代理提供者
 """
+
 import os
 import urllib.parse
 from cachetools import TTLCache
 from wsgidav.dav_provider import DAVProvider
 
+import config
 from .utils import Utils
 from .logger import logger
 from .collection import WebDAVProxyCollection
@@ -21,8 +23,8 @@ class WebDAVProxy(DAVProvider):
         self.backend_password = backend_password
         self.auth = (backend_username, backend_password) if backend_username and backend_password else None
         # 添加资源元数据缓存 - 从环境变量获取配置
-        cache_size = int(os.getenv('METADATA_CACHE_SIZE', '2000'))
-        cache_ttl = int(os.getenv('METADATA_CACHE_TTL', '60'))
+        cache_size = config.METADATA_CACHE_SIZE
+        cache_ttl = config.METADATA_CACHE_TTL
         self.resource_meta_cache = TTLCache(maxsize=cache_size, ttl=cache_ttl)
         logger.info(f"元数据缓存配置: 大小={cache_size}, TTL={cache_ttl}秒")
         # 拆解后端url,获取路径部分
@@ -46,11 +48,11 @@ class WebDAVProxy(DAVProvider):
     def get_resource_meta(self, path, refresh=False):
         """获取资源元数据，包括 content_length,content_type,
         creation_date,display_name,etag,last_modified,is_collection
-        
+
         Args:
             path: 资源路径
             refresh: 是否强制刷新缓存
-            
+
         Returns:
             包含元数据的字典
         """
@@ -91,7 +93,7 @@ class WebDAVProxy(DAVProvider):
 
     def clear_resource_meta(self, path):
         """清理资源元数据缓存"""
-        if not path.endswith('/'):
+        if not path.endswith('/') and path in self.resource_meta_cache:
             self.resource_meta_cache.pop(path)
             return
         keys = self.resource_meta_cache.keys()

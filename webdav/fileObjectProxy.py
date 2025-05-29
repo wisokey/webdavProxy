@@ -15,7 +15,6 @@ from typing import Optional, Tuple, Dict, Any
 
 from .logger import logger
 
-
 class FileObjectDownloadProxy(io.RawIOBase):
     """文件下载代理 - 用于从后端WebDAV流式下载文件"""
 
@@ -53,17 +52,17 @@ class FileObjectDownloadProxy(io.RawIOBase):
                 # 如果位置不是0，使用Range请求从当前位置开始
                 if self.position > 0:
                     headers['Range'] = f'bytes={self.position}-'
-                
+
                 self.response = requests.get(
                     self.backend_url, 
                     auth=self.auth, 
                     stream=True, 
                     headers=headers
                 )
-                
+
                 if self.response.status_code not in (200, 206):
                     raise IOError(f"HTTP错误: {self.response.status_code}")
-                    
+
                 self.stream = self.response.iter_content(chunk_size=8192)
                 logger.debug(f"打开文件下载流: {self.path}, 位置: {self.position}")
             except Exception as e:
@@ -170,7 +169,6 @@ class FileObjectDownloadProxy(io.RawIOBase):
 
 class FileObjectUploadProxy(io.RawIOBase):
     """文件上传代理 - 用于向后端WebDAV流式上传文件
-    
     使用一个线程和一个HTTP请求完成整个文件的上传，真正的流式上传
     """
 
@@ -194,7 +192,7 @@ class FileObjectUploadProxy(io.RawIOBase):
         self.error_message = None
 
         # 初始化线程和队列
-        self._queue = queue.Queue(maxsize=5)
+        self._queue = queue.Queue(maxsize=256)
         self._upload_thread = threading.Thread(target=self._upload_worker)
         self._upload_started = False
 
@@ -204,7 +202,7 @@ class FileObjectUploadProxy(io.RawIOBase):
             self.headers['Content-Type'] = self.content_type
 
         logger.debug(f"初始化文件上传代理: {path}, 内容类型: {content_type}")
-        
+
         # 启动上传线程
         self._start_upload()
 

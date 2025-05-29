@@ -22,31 +22,32 @@ pip install -r requirements.txt
 
 ## 配置
 
-编辑 `.env` 文件（从 `.env.example` 复制）:
+编辑 `config.yaml` 文件（从 `config.yaml.example` 复制）:
 
 ```
 # 代理服务器配置
-HOST=0.0.0.0
-PORT=8080
-AUTH_USERNAME=user
-AUTH_PASSWORD=password
+HOST: 0.0.0.0
+PORT: 8080
+MOUNT_PATH: /dav/
+AUTH_USERNAME: user
+AUTH_PASSWORD: password
 
 # 后端 WebDAV服务器配置
-BACKEND_URL=https://example.com/webdav
-BACKEND_USERNAME=backend_user
-BACKEND_PASSWORD=backend_password
+BACKEND_URL: https://example.com/webdav
+BACKEND_USERNAME: backend_user
+BACKEND_PASSWORD: backend_password
 
 # 元数据缓存配置
-METADATA_CACHE_SIZE=2000
-METADATA_CACHE_TTL=60
+METADATA_CACHE_SIZE: 2000
+METADATA_CACHE_TTL: 60
 
 # 日志配置
 # 是否将日志写入文件，设置为true开启文件日志，false仅输出到控制台
-ENABLE_FILE_LOGGING=false
+ENABLE_FILE_LOGGING: false
 # 日志级别：DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_LEVEL=INFO
+LOG_LEVEL: INFO
 # 日志文件路径（仅在ENABLE_FILE_LOGGING=true时生效）
-LOG_FILE=webdav_proxy.log
+LOG_FILE: webdav_proxy.log
 ```
 
 ## 运行
@@ -57,7 +58,7 @@ python main.py
 
 ## 使用
 
-运行后，你可以使用任何 WebDAV 客户端连接到 `http://localhost:8080`，使用配置的用户名和密码进行身份验证。
+运行后，你可以使用任何 WebDAV 客户端连接到 `http://localhost:8080/dav/`，使用配置的用户名和密码进行身份验证。
 
 ## 依赖
 
