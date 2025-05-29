@@ -1,5 +1,5 @@
 wsgidav>=4.3.3
 requests>=2.32.3
-waitress>=3.0.2
+cheroot>=10.0.1
 cachetools>=5.3.3
 lxml>=5.3.0

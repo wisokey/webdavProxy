@@ -4,7 +4,7 @@ WebDAV服务器配置和初始化
 
 from wsgidav.wsgidav_app import WsgiDAVApp
 from wsgidav.util import init_logging
-from waitress import serve
+from cheroot import wsgi
 from urllib.parse import quote
 
 from .provider import WebDAVProxy
@@ -100,5 +100,9 @@ class WebDAVServer:
         logger.info(f"WebDAV代理服务器启动于http://{self.host}:{self.port}{self.mount_path}")
         logger.info(f"转发到后端WebDAV服务器: {self.backend_url}")
 
-        # 使用waitress作为WSGI服务器
-        serve(app, host=self.host, port=self.port)
+        # 使用Cheroot作为WSGI服务器
+        server = wsgi.Server((self.host, self.port), app)
+        try:
+            server.start()
+        except KeyboardInterrupt:
+            server.stop()
