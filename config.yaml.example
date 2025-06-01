@@ -21,3 +21,6 @@ ENABLE_FILE_LOGGING: false
 LOG_LEVEL: INFO
 # 日志文件路径（仅在ENABLE_FILE_LOGGING=true时生效）
 LOG_FILE: webdav_proxy.log
+
+# 开启文件切割大小,超过该大小的文件将被切割上传到后端，单位为字节,默认为8GB
+FILE_MAX_SIZE: 8589934592

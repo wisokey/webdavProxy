@@ -60,6 +60,9 @@ class WebDAVProxy(DAVProvider):
         if not refresh and path in self.resource_meta_cache:
             return self.resource_meta_cache[path]
 
+        if path is None:
+            return None
+
         # 发送PROPFIND请求从后端获取元数据
         backend_url = self._get_backend_url(path)
         # 为避免请求次数过多，每次以文件夹为单位请求

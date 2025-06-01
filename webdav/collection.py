@@ -53,7 +53,7 @@ class WebDAVProxyCollection(DAVCollection):
         if self.environ.get("REQUEST_METHOD", "").upper() == "COPY":
             return []
 
-        result = Utils.propfind(self.backend_url, self.auth)
+        result = Utils.propfind(self.backend_url.rstrip('/'), self.auth)
         self.provider.set_resource_meta(result)
         if result is None:
             raise DAVError(HTTP_NOT_FOUND)
@@ -107,7 +107,7 @@ class WebDAVProxyCollection(DAVCollection):
             method,
             url=self.backend_url,
             auth=self.auth,
-            headers={"Destination": dest_url, "Overwrite": self.environ.get("HTTP_OVERWRITE")}
+            headers={"Destination": Utils.encode_url(dest_url), "Overwrite": self.environ.get("HTTP_OVERWRITE")}
         )
 
         if response.status_code not in (201, 204):
@@ -133,7 +133,7 @@ class WebDAVProxyCollection(DAVCollection):
             method="MOVE",
             url=self.backend_url,
             auth=self.auth,
-            headers={"Destination": dest_url, "Overwrite": self.environ.get("HTTP_OVERWRITE")}
+            headers={"Destination": Utils.encode_url(dest_url), "Overwrite": self.environ.get("HTTP_OVERWRITE")}
         )
 
         err_list = []
