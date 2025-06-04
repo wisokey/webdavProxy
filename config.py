@@ -2,7 +2,7 @@ import yaml
 from pathlib import Path
 
 # 配置文件路径
-CONFIG_FILE = Path(__file__).parent / 'config.yaml'
+CONFIG_FILE = Path(__file__).parent / 'config/config.yaml'
 
 # 加载配置文件
 config_data = {}

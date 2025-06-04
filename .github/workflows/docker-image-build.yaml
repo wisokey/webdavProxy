@@ -37,7 +37,7 @@ jobs:
       - name: Create Release and Upload Image
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.event.head_commit.message }}
+          name: webdav-proxy:v${{ steps.generate-version.outputs.VERSION }}
           tag_name: v${{ steps.generate-version.outputs.VERSION }}
           files: ${{ env.OUTPUT_FILENAME }}
         env:
