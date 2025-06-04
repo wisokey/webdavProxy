@@ -1,0 +1,44 @@
+name: Build and Release Docker Image
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate version number
+        id: generate-version
+        run: |
+          echo "VERSION=$(date +'%Y%m%d%H%M')" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        id: build-image
+        run: |
+          FULL_IMAGE_NAME=webdav-proxy:v${{ steps.generate-version.outputs.VERSION }}
+          echo "构建镜像: $FULL_IMAGE_NAME"
+          docker build -t $FULL_IMAGE_NAME .
+          echo "image_name=$FULL_IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "OUTPUT_FILENAME=webdav-proxy-${{ steps.generate-version.outputs.VERSION }}.tar" >> $GITHUB_ENV
+
+      - name: Save Docker image as tar
+        run: |
+          echo "保存镜像为 tar 包: ${{ env.OUTPUT_FILENAME }}"
+          docker save ${{ steps.build-image.outputs.image_name }} -o ${{ env.OUTPUT_FILENAME }}
+
+      - name: Create Release and Upload Image
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.event.head_commit.message }}
+          tag_name: v${{ steps.generate-version.outputs.VERSION }}
+          files: ${{ env.OUTPUT_FILENAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
