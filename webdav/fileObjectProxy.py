@@ -13,6 +13,7 @@ import json
 import queue
 import threading
 from typing import Optional, Tuple, Dict, Any
+from wsgidav.dav_error import DAVError
 
 from config import FILE_MAX_SIZE
 from .logger import logger
@@ -257,7 +258,7 @@ class FileObjectDownloadProxy(io.RawIOBase):
 
             except Exception as e:
                 logger.error(f"读取文件数据失败: {e}")
-                return b''
+                raise
 
     def seek(self, offset: int, whence: int = io.SEEK_SET) -> int:
         """移动文件指针位置"""
@@ -406,7 +407,7 @@ class FileObjectUploadProxy(io.RawIOBase):
                     self.temp_data = None
             except Exception as e:
                 logger.error(f"从队列获取数据错误: {e}")
-                break
+                raise
 
     def _upload_worker(self):
         """上传线程函数"""
@@ -427,7 +428,7 @@ class FileObjectUploadProxy(io.RawIOBase):
                     self.error_message = f"上传失败，状态码: {response.status_code}"
                     self.upload_status = self.STATUS_ERROR
                     logger.error(f"上传文件 {file_folder + '/' + file_name + file_last} 失败，状态码: {response.status_code}")
-                    break
+                    raise DAVError(response.status_code)
 
                 self.total_uploaded_bytes += self.uploaded_bytes
                 self.file_split_info['splitFileList'].append({
@@ -450,6 +451,7 @@ class FileObjectUploadProxy(io.RawIOBase):
                     self.error_message = f"上传分割信息失败，状态码: {response.status_code}"
                     self.upload_status = self.STATUS_ERROR
                     logger.error(f"上传文件 {self.path} 分割信息失败，状态码: {response.status_code}")
+                    raise DAVError(response.status_code)
 
             self.upload_status = self.STATUS_DONE
             logger.info(f"文件上传成功: {self.path}, 总大小: {self.total_uploaded_bytes}字节")
@@ -490,6 +492,7 @@ class FileObjectUploadProxy(io.RawIOBase):
                 self.error_message = str(e)
                 self.upload_status = self.STATUS_ERROR
                 logger.error(f"关闭时上传文件 {self.path} 失败: {e}")
+                raise
             finally:
                 super(FileObjectUploadProxy, self).close()
                 logger.debug(f"关闭文件上传代理: {self.path}, 已上传数据: {self.total_uploaded_bytes}字节")
